@@ -1,5 +1,6 @@
 import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
+import * as kp from './key-provider'
 
 const app = new Hono()
 
