@@ -1,26 +1,54 @@
 import * as fs from 'fs';
 
-const filename: string = "KEYFILE"
-
-function writeKey(seq: number, expiration: Date, key: string): void {
-    try {
-        const data = `${seq}\n${expiration.toISOString()}\n${key}\n`;  // Date stored as ISO string
-        fs.writeFileSync(filename, data, 'utf8');
-    } catch (err) {
-        console.error('Error writing to file:', err);
-    }
+export interface KeyInfo {
+    Sequence: number;
+    Expiration: number; // Unix timestamp
+    Key: string;
 }
 
-function readKey(): { seq: number; expiration: Date; key: string } | null {
-    try {
-        const data: string = fs.readFileSync(filename, 'utf8');
-        const [seqStr, expirationStr, key] = data.split('\n').map(line => line.trim());
+const filePath: string = "keyfile.json"
 
-        const seq: number = parseInt(seqStr, 10);  // Convert string to integer
-        const expiration: Date = new Date(expirationStr);        // Convert string to Date
-        return { seq, expiration, key };
-    } catch (err) {
-        console.error('Error reading from file:', err);
-        return null;
-    }
+async function ensureFileExists(): Promise<void> {
+    return fs.access(filePath, async (err) => {
+        if (err)
+        {
+            return fs.writeFile(filePath, JSON.stringify([], null, 2), (err) => {
+                if (err) throw err;
+            });
+        }
+    });
+}
+
+export async function readKeys(): Promise<KeyInfo[]> {
+    await ensureFileExists();
+
+    return new Promise((resolve, reject) => {
+        fs.readFile(filePath, 'utf-8', (err, data) => {
+            if (err) {
+                reject(err);
+            } else {
+                resolve(JSON.parse(data) as KeyInfo[]);
+            }
+        });
+    });
+}
+
+export async function insertKey(newRow: KeyInfo): Promise<void> {
+    await ensureFileExists();
+
+    const KeyInfos = await readKeys();
+
+    // Append the new row
+    KeyInfos.push(newRow);
+
+    // Write the updated data back to the JSON file
+    return new Promise((resolve, reject) => {
+        fs.writeFile(filePath, JSON.stringify(KeyInfos, null, 2), 'utf-8', (err) => {
+            if (err) {
+                reject(err);
+            } else {
+                resolve();
+            }
+        });
+    });
 }
