@@ -5,7 +5,9 @@
   },
   "dependencies": {
     "@hono/node-server": "^1.13.2",
-    "hono": "^4.6.4"
+    "@types/ws": "^8.5.12",
+    "hono": "^4.6.4",
+    "lib0": "^0.2.98"
   },
   "devDependencies": {
     "@types/node": "^20.11.17",
