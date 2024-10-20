@@ -1,12 +1,15 @@
 {
   "name": "signaler",
+  "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts"
   },
   "dependencies": {
     "@hono/node-server": "^1.13.2",
+    "@hono/oidc-auth": "^1.1.0",
     "@types/ws": "^8.5.12",
-    "hono": "^4.6.4",
+    "dotenv": "^16.4.5",
+    "hono": "^4.6.5",
     "lib0": "^0.2.98"
   },
   "devDependencies": {
