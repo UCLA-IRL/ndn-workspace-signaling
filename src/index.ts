@@ -19,17 +19,6 @@ app.get('/keys', async (c) => {
   if (!auth)
     return c.json({error: "Not authorized"}, 403);
 
-  // Dummy code to make a key and return all keys
-  const newRow: kp.KeyInfo = {
-    Sequence: 3,
-    Expiration: Math.floor(Date.now() / 1000), // current timestamp in seconds
-    Key: 'newKey'
-  };
-
-  await kp.insertKey(newRow)
-      .then(() => console.log('Row inserted successfully'))
-      .catch(err => console.error('Error inserting row:', err));
-
   return new Promise((resolve, reject) => {
     kp.readKeys()
         .then(keys => resolve(c.json(keys)))
