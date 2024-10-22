@@ -71,7 +71,7 @@ async function ensureFileExists(): Promise<void> {
 }
 
 
-async function readFile(): Promise<KeyFile> {
+function readFile(): Promise<KeyFile> {
     return new Promise(async (resolve, reject) => {
         await ensureFileExists().catch(err => reject(err));
 
@@ -81,6 +81,19 @@ async function readFile(): Promise<KeyFile> {
             } else {
                 let keyFile: KeyFile = JSON.parse(data);
                 resolve(keyFile);
+            }
+        });
+    });
+}
+
+
+function writeFile(keyFile: KeyFile): Promise<void> {
+    return new Promise((resolve, reject) => {
+        fs.writeFile(filePath, JSON.stringify(keyFile, null, 2), 'utf-8', (err) => {
+            if (err) {
+                reject(err);
+            } else {
+                resolve();
             }
         });
     });
@@ -117,15 +130,7 @@ async function refreshKeys(): Promise<void> {
     );
 
     // Write the updated data back to the JSON file
-    return new Promise((resolve, reject) => {
-        fs.writeFile(filePath, JSON.stringify(keyFile, null, 2), 'utf-8', (err) => {
-            if (err) {
-                reject(err);
-            } else {
-                resolve();
-            }
-        });
-    });
+    await writeFile(keyFile);
 }
 
 export async function readKeys(): Promise<KeyInfo[]> {
@@ -134,6 +139,18 @@ export async function readKeys(): Promise<KeyInfo[]> {
             .then(keyFile => resolve(keyFile.keys))
             .catch(err => reject(err));
     });
+}
+
+export async function setPeriod(period: number): Promise<void> {
+    let keyFile = await readFile();
+    keyFile.period = period;
+    await writeFile(keyFile);
+}
+
+export async function setTolerance(tolerance: number): Promise<void> {
+    let keyFile = await readFile();
+    keyFile.tolerance = tolerance;
+    await writeFile(keyFile);
 }
 
 refreshKeys();
