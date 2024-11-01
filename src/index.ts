@@ -2,10 +2,11 @@ import 'dotenv/config'
 import axios from 'axios';
 import {randomBytes} from "crypto";
 import { serve } from '@hono/node-server'
+import { getConnInfo } from '@hono/node-server/conninfo'
 import { validator } from 'hono/validator';
 import { Hono } from 'hono'
 import { oidcAuthMiddleware, getAuth, revokeSession, processOAuthCallback } from '@hono/oidc-auth'
-import * as kp from './key-provider'
+import * as cs from './cert-storage'
 
 const app = new Hono()
 
@@ -23,11 +24,67 @@ app.get('/keys', async (c) => {
     return c.json({error: "Not authorized"}, 403);
 
   return new Promise((resolve, reject) => {
-    kp.readKeys()
-        .then(keys => resolve(c.json(keys)))
-        .catch(err => resolve(c.json({error: err}, 500)))
+    cs.getAllCerts()
+        .then(certs => resolve(c.json(certs)))
+        .catch(err => resolve(c.json({error: err}, 500)));
   });
 })
+
+app.post('/keys',
+    validator('json', (value, c) => {
+            const key = value['key'];
+            const expiration = value['expires'];
+
+            if (key == undefined || key === '') {
+                c.json({error: 'key is required'}, 400);
+            } else if (expiration == undefined || expiration < Date.now() / 1000) {
+                c.json({error: 'expires must be valid'}, 400);
+            }
+
+            return {key, expiration};
+        }
+    ),
+    async (c) => {
+        const auth = await getAuth(c);
+        if (!auth)
+            return c.json({error: "Not authorized"}, 403);
+
+        const info = getConnInfo(c);
+
+        if (info.remote.address === undefined || auth.email === undefined)
+            return c.json({error: "Internal server error"}, 500);
+
+        const { key, expiration } = c.req.valid('json');
+        const cert: cs.CertInfo = {
+            host: info.remote.address,
+            user: auth.email as string,
+            expiration: expiration,
+            key: key,
+        };
+
+        return new Promise((resolve, reject) => {
+            cs.addCert(cert)
+                .then(() => resolve(c.text('Key added')))
+                .catch(err => resolve(c.json({error: err}, 500)));
+        });
+    }
+);
+
+app.delete('/keys/:key',
+    async (c) => {
+        const auth = await getAuth(c);
+        if (!auth)
+            return c.json({error: "Not authorized"}, 403);
+
+        const key = c.req.param('key');
+
+        return new Promise((resolve, reject) => {
+            cs.removeCert(auth.email as string, key)
+                .then(() => resolve(c.text('Key removed')))
+                .catch(err => resolve(c.json({error: err}, 500)));
+        });
+    }
+);
 
 app.post('/invite',
     validator('json', (value, c) => {
