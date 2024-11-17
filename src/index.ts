@@ -2,7 +2,6 @@ import 'dotenv/config'
 import axios from 'axios';
 import {randomBytes} from "crypto";
 import { serve } from '@hono/node-server'
-import { getConnInfo } from '@hono/node-server/conninfo'
 import { validator } from 'hono/validator';
 import { Hono } from 'hono'
 import { oidcAuthMiddleware, getAuth, revokeSession, processOAuthCallback } from '@hono/oidc-auth'
@@ -49,14 +48,11 @@ app.post('/keys',
         if (!auth)
             return c.json({error: "Not authorized"}, 403);
 
-        const info = getConnInfo(c);
-
-        if (info.remote.address === undefined || auth.email === undefined)
+        if (auth.email === undefined)
             return c.json({error: "Internal server error"}, 500);
 
         const { key, expiration } = c.req.valid('json');
         const cert: cs.CertInfo = {
-            host: info.remote.address,
             user: auth.email as string,
             expiration: expiration,
             key: key,

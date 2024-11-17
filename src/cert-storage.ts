@@ -1,5 +1,4 @@
 export interface CertInfo {
-    host: string;       // IP address
     user: string;       // user ID or email
     expiration: number; // Unix timestamp
     key: string;        // fp
@@ -16,17 +15,17 @@ const expirationGranularity: number = 300; // s
 const certs: Map<string, CertInfo> = new Map();
 
 export async function addCert(cert: CertInfo): Promise<void> {
-    certs.set(cert.host + '/' + cert.user, cert);
+    certs.set(cert.user, cert);
 }
 
 export async function getAllCerts(): Promise<CertInfo[]> {
     return Array.from(certs.values());
 }
 
-export async function getCert(host: string, user: string): Promise<CertInfo> {
-    const result = certs.get(host + '/' + user);
+export async function getCert(user: string): Promise<CertInfo> {
+    const result = certs.get(user);
     if (result === undefined) {
-        throw new Error("No key for found for host and user.");
+        throw new Error("No key for found for user.");
     }
 
     return result;
