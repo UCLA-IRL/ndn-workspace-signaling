@@ -5,16 +5,20 @@
     "dev": "tsx watch src/index.ts"
   },
   "dependencies": {
+    "@esbuild/darwin-x64": "^0.24.0",
     "@hono/node-server": "^1.13.2",
     "@hono/oidc-auth": "^1.1.0",
     "@types/ws": "^8.5.12",
     "axios": "^1.7.7",
     "dotenv": "^16.4.5",
     "hono": "^4.6.5",
-    "lib0": "^0.2.98"
+    "lib0": "^0.2.98",
+    "node-turn": "^0.0.6",
+    "socket.io": "^4.8.1"
   },
   "devDependencies": {
     "@types/node": "^20.11.17",
+    "@types/node-turn": "^0.0.5",
     "tsx": "^4.7.1"
   }
 }

@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <script src="https://webrtc.github.io/adapter/adapter-latest.js" defer=""></script>
+    <title>Signaler Frontend</title>
+</head>
+
+<body>
+    <h1>WebRTC Auth PoC</h1>
+    <h2>Certificate Status: <span id="certStatus">Unknown</span></h2>
+    <div><button id="certLoad">Load</button><button id="certSave" disabled="">Save</button><button
+            id="certNew">New</button><button id="certUpload" disabled="">Upload</button><button id="certClear"
+            disabled="">Clear</button></div>
+    <h2>Chat Status: <span id="chatStatus">Disconnected</span></h2>
+    <div><button id="chatJoin" disabled="">Join</button><button id="chatLeave" disabled="">Leave</button></div>
+    <h2>Chat Log</h2>
+    <div><input id="chatInput"><button id="chatPost" disabled="">Post</button></div>
+    <div id="chatLog"></div>
+    <script type="module" src="/src/main.js"></script>
+</body>
+
+</html>

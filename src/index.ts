@@ -6,6 +6,7 @@ import { validator } from 'hono/validator';
 import { Hono } from 'hono'
 import { oidcAuthMiddleware, getAuth, revokeSession, processOAuthCallback } from '@hono/oidc-auth'
 import * as cs from './cert-storage'
+import { startSignal } from './signaling-server';
 
 const app = new Hono()
 
@@ -182,7 +183,9 @@ app.use('*', oidcAuthMiddleware())
 const port = 3000
 console.log(`Server is running on port ${port}`)
 
-serve({
+export const server = serve({
   fetch: app.fetch,
   port
 })
+
+startSignal(server);
