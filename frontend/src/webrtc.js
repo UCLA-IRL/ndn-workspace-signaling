@@ -73,6 +73,11 @@ export function loadCert() {
             cert => {
                 if (cert !== null) {
                     getCertificateChecksum(cert).then(fp => {
+                        let exp = new Date(cert.expires);
+                        if (exp < new Date()) {
+                            console.log("Certificate expired");
+                            res(false); return;
+                        }
                         let ts = new Date(cert.expires).toISOString();
                         console.log(`Loaded certificate (expires ${ts}): ${fp}`);
                     });
@@ -85,7 +90,7 @@ export function loadCert() {
             },
             err => {
                 console.log(`Load Failed (${err})`);
-                rej();
+                rej(err);
             },
         );
     });
@@ -94,54 +99,49 @@ export function loadCert() {
 export function saveCert() {
     console.assert(localCert !== null, 'No local certificate available');
     console.assert(certDB !== null, 'IndexedDB not available');
-    saveCertificate(certDB, localCert,
-        () => {
-            setCertStatusDisplay('Saved');
-        },
-        err => {
-            setCertStatusDisplay(`Save Failed (${err})`);
-        },
-    );
 
+    return new Promise((res, rej) => {
+        saveCertificate(certDB, localCert,
+            () => {
+                res(true)
+            },
+            err => {
+                rej(err)
+            },
+        );
+    });
 }
 
-export function newCert() {
-    RTCPeerConnection.generateCertificate({
+export async function newCert() {
+    const cert = await RTCPeerConnection.generateCertificate({
         name: 'ECDSA',
         hash: 'SHA-256',
         namedCurve: 'P-256',
-    }).then(cert => {
-        getCertificateChecksum(cert).then(fp => {
-            let ts = new Date(cert.expires).toISOString();
-            console.log(`Generated new certificate (expires ${ts}): ${fp}`);
-        });
-        localCert = cert;
     });
+    const fp = await getCertificateChecksum(cert)
+    let ts = new Date(cert.expires).toISOString();
+    console.log(`Generated new certificate (expires ${ts}): ${fp}`);
+    localCert = cert;
 }
 
-export function uploadCert() {
+export async function uploadCert() {
     console.assert(localCert !== null, 'No local certificate available');
-    getCertificateChecksum(localCert).then(fp => {
-        fetch('/keys', {
-            method: 'POST',
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                'key': fp,
-                'expires': localCert.expires,
-            }),
-        }).then(res => {
-            if (res.status === 200) {
-                setCertStatusDisplay('Uploaded');
-            } else {
-                res.json().then(res => {
-                    setCertStatusDisplay(`Upload Failed (${res.status})`);
-                })
-            }
-        })
-    });
+    const fp = getCertificateChecksum(localCert);
+    const res = await fetch('/keys', {
+        method: 'POST',
+        headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            'key': fp,
+            'expires': localCert.expires,
+        }),
+    })
+
+    if (res.status !== 200) {
+        throw Error('Could not upload certificate');
+    }
 }
 
 export function clearCert() {
@@ -155,16 +155,9 @@ export function clearCert() {
             },
         }).then(res => {
             if (res.status === 200) {
-                setCertStatusDisplay('Cleared');
                 localCert = null;
-                setButtonClickable('certUpload', false);
-                setButtonClickable('certClear', false);
-                setButtonClickable('certSave', false);
-                setButtonClickable('chatJoin', false);
             } else {
-                res.json().then(res => {
-                    setCertStatusDisplay(`Delete Failed (${res.status})`);
-                })
+                throw Error('Could not delete certificate');
             }
         });
     });
@@ -209,9 +202,18 @@ export function broadcast(data) {
     }
 }
 
+export function send(peer, data) {
+    activeChannel[peer].send(data);
+}
+
 let dataHandler;
 export function setDataHandler(dh) {
     dataHandler = dh;
+}
+
+let peerHandler;
+export function setPeerHandler(ph) {
+    peerHandler = ph;
 }
 
 // =============================== Peer Control ===============================
@@ -331,6 +333,7 @@ function onPeerAvailable(event, peer) {
 
 function registerChannelHandlers(channel, peer) {
     channel.addEventListener('open', () => {
+        peerHandler(peer);
         console.log(`User ${peer} joined.`);
         channel.addEventListener('close', () => {
             console.log(`User ${peer} disconnected.`);
@@ -395,8 +398,6 @@ openCertDatabase(
         console.assert(certDB === null, 'IndexedDB already open');
         certDB = db;
         console.log('IndexedDB opened.');
-        setButtonClickable('certNew', true);
-        setButtonClickable('certLoad', true);
     },
     err => console.error(`IndexedDB open error: ${err}`)
 );
