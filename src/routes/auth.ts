@@ -101,5 +101,5 @@ auth.get('/callback', async (c) => {
     return processOAuthCallback(c)
 })
 
-auth.use('*', oidcAuthMiddleware())
+auth.use('*', oidcAuthMiddleware());
 
