@@ -128,7 +128,7 @@ export async function newCert() {
 
 export async function uploadCert() {
     console.assert(localCert !== null, 'No local certificate available');
-    const fp = getCertificateChecksum(localCert);
+    const fp = await getCertificateChecksum(localCert);
     const res = await fetch('/keys', {
         method: 'POST',
         headers: {
@@ -144,6 +144,9 @@ export async function uploadCert() {
     if (res.status !== 200) {
         throw Error('Could not upload certificate');
     }
+
+    console.log("Cert uploaded");
+
 }
 
 export function clearCert() {
@@ -220,13 +223,27 @@ export function end() {
 export function broadcast(data) {
     console.log(`BROAD ${data}`);
     for (let peer in activeChannel) {
-        activeChannel[peer].send(data);
+        try {
+            activeChannel[peer].send(data);
+        } catch {
+            delete localDesc[peer];
+            delete remoteDesc[peer];
+            delete activeConnection[peer];
+            delete activeChannel[peer];
+        }
     }
 }
 
 export function send(peer, data) {
     console.log(`SEND ${peer}: ${data}`)
-    activeChannel[peer].send(data);
+    try {
+        activeChannel[peer].send(data);
+    } catch {
+        delete localDesc[peer];
+        delete remoteDesc[peer];
+        delete activeConnection[peer];
+        delete activeChannel[peer];
+    }
 }
 
 let dataHandler;

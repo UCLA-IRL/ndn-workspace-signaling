@@ -11,7 +11,13 @@ function insertByte(byte, arr) {
 }
 
 async function getByte(data) {
-    const arr = new Uint8Array(await data.arrayBuffer());
+    let arr;
+
+    try {
+        arr = new Uint8Array(await data.arrayBuffer());
+    } catch {
+        arr = new Uint8Array(data);
+    }
 
     return [arr.at(0), arr.slice(1)];
 }
@@ -28,7 +34,7 @@ export class Adapter {
         });
 
         this.awareness = new A.Awareness(this.doc);
-        this.awareness.on('update', ({ added, updated, removed }) => { 
+        this.awareness.on('update', ({ added, updated, removed }) => {
             const changedClients = added.concat(updated).concat(removed);
             const msg = A.encodeAwarenessUpdate(this.awareness, changedClients);
 
@@ -60,12 +66,10 @@ export class Adapter {
 
     static async create(d) {
         await W.openDB();
-        if (!(await W.loadCert())) {
-            await W.newCert();
-            await W.uploadCert();
-            await W.saveCert();
-        }
-        
+        await W.newCert();
+        await W.uploadCert();
+        await W.saveCert();
+
         return new Adapter(d);
     }
 }

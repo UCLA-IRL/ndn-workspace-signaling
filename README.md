@@ -1,9 +1,9 @@
 # NDN Workspace over TCP/IP Signaling Server
 This repository serves four goals:
-1. [WIP] A source of trust where a workspace manager can approve users based on current IdP solutions
+1. A source of trust where a workspace manager can approve users based on current IdP solutions
 2. A rendezvous server where individual WebRTC clients can communicate to authenticate SDP fingerprints, signal to each other their session descriptions, and hole-punch using STUN
 3. A WebRTC adapter for Y.js that implements our NxN signaling protocol
-4. [WIP] A proof of concept that uses our rendezvous server and adapter (ProseQuill, Drawing)
+4. A proof of concept that uses our rendezvous server and adapter (ProseMirror; source provided by [Y.js Demos](https://github.com/yjs/yjs-demos))
 
 ## Build
 Firstly, build the frontend which includes the adapter and proof of concept:

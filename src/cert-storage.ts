@@ -10,31 +10,40 @@ const schedulingGranularity: number = 60 * 1000; // ms
 // Do not immediately delete keys as soon as they expire
 const expirationGranularity: number = 300; // s
 
-// key: "user/ip"
-// value: CertInfo
-const certs: Map<string, CertInfo> = new Map();
+const certs: CertInfo[] = [];
 
 export async function addCert(cert: CertInfo): Promise<void> {
-    certs.set(cert.user, cert);
+    certs.push(cert);
 }
 
 export async function getAllCerts(): Promise<CertInfo[]> {
-    return Array.from(certs.values());
+    return certs 
 }
 
-export async function getCert(user: string): Promise<CertInfo> {
-    const result = certs.get(user);
-    if (result === undefined) {
-        throw new Error("No key for found for user.");
+export async function getCert(user: string): Promise<CertInfo | null> {
+    for (let cert of certs) {
+        if (cert.user == user) {
+            return cert; 
+        }
     }
 
-    return result;
+    return null;
+}
+
+export async function getCertByFP(fp: string): Promise<CertInfo | null> {
+    for (let cert of certs) {
+        if (cert.key == fp) {
+            return cert; 
+        }
+    }
+
+    return null;
 }
 
 export async function removeCert(user: string, key: string): Promise<void> {
-    for (const [k, v] of certs) {
-        if (v.user === user && v.key === key) {
-            certs.delete(k);
+    for (let cert of certs) {
+        if (cert.user === user && cert.key === key) {
+            certs.splice(certs.indexOf(cert), 1);
             return;
         }
     }
@@ -44,9 +53,9 @@ export async function removeCert(user: string, key: string): Promise<void> {
 
 async function removeExpiredCerts(): Promise<void> {
     const now = Date.now() / 1000;
-    certs.forEach((cert, key) => {
+    certs.forEach(cert => {
         if (now - cert.expiration > expirationGranularity) {
-            certs.delete(key);
+            certs.splice(certs.indexOf(cert), 1);
         }
     });
 }
