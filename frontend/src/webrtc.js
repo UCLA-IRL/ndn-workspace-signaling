@@ -1,3 +1,5 @@
+import { io } from 'socket.io-client';
+
 // ========================== Certificate Management ==========================
 let certDB = null;
 let localCert = null;
@@ -163,6 +165,25 @@ export function clearCert() {
     });
 }
 
+export function openDB() {
+    return new Promise((res, rej) => {
+        openCertDatabase(
+            db => {
+                console.assert(certDB === null, 'IndexedDB already open');
+                certDB = db;
+                console.log('IndexedDB opened.');
+                res();
+            },
+            err => {
+                console.error(`IndexedDB open error: ${err}`);
+                rej(err);
+            }
+        );
+    });
+}
+
+
+
 export function start() {
     console.assert(localCert !== null, 'No local certificate available');
     console.assert(Object.keys(activeConnection).length === 0, 'Local connection exists');
@@ -197,12 +218,14 @@ export function end() {
 }
 
 export function broadcast(data) {
+    console.log(`BROAD ${data}`);
     for (let peer in activeChannel) {
         activeChannel[peer].send(data);
     }
 }
 
 export function send(peer, data) {
+    console.log(`SEND ${peer}: ${data}`)
     activeChannel[peer].send(data);
 }
 
@@ -343,7 +366,10 @@ function registerChannelHandlers(channel, peer) {
             delete activeChannel[peer];
         })
     });
-    channel.addEventListener('message', event => dataHandler(peer, event.data));
+    channel.addEventListener('message', event => {
+        console.log(`RECV ${peer}`)
+        dataHandler(peer, event.data)
+    });
 }
 
 function onRTCConnectionStateChange(event, peer) {
@@ -356,8 +382,6 @@ function onRTCConnectionStateChange(event, peer) {
         delete remoteDesc[peer];
         delete activeConnection[peer];
         delete activeChannel[peer];
-
-        sendOffer(peer);
     }
 }
 
@@ -393,11 +417,3 @@ function sendOffer(peer, send = true) {
     deferredCandidates[peer] = []
 }
 
-openCertDatabase(
-    db => {
-        console.assert(certDB === null, 'IndexedDB already open');
-        certDB = db;
-        console.log('IndexedDB opened.');
-    },
-    err => console.error(`IndexedDB open error: ${err}`)
-);

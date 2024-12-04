@@ -4,13 +4,15 @@ import * as W from './webrtc';
 
 function insertByte(byte, arr) {
     const bigArr = new Uint8Array(arr.length + 1);
-    bigArr.set(byte);
+    bigArr.set(new Uint8Array([byte]));
     bigArr.set(arr, 1);
 
     return bigArr;
 }
 
-function getByte(arr) {
+async function getByte(data) {
+    const arr = new Uint8Array(await data.arrayBuffer());
+
     return [arr.at(0), arr.slice(1)];
 }
 
@@ -21,20 +23,26 @@ export class Adapter {
     constructor(d) {
         this.doc = d;
         this.doc.on('update', u => {
+            console.log(`Sending: ${u}`);
             W.broadcast(insertByte(1, u));
         });
 
-        this.awareness = new A.Awareness(doc);
+        this.awareness = new A.Awareness(this.doc);
         this.awareness.on('update', ({ added, updated, removed }) => { 
             const changedClients = added.concat(updated).concat(removed);
             const msg = A.encodeAwarenessUpdate(this.awareness, changedClients);
 
             W.broadcast(insertByte(2, msg));
         });
+
+        W.start();
+        W.setDataHandler(this.onUpdate.bind(this));
+        W.setPeerHandler(this.onNewPeer.bind(this));
     }
 
-    onUpdate(peer, data) {
-        const [byte, arr] = getByte(data);
+    async onUpdate(peer, data) {
+        const [byte, arr] = await getByte(data);
+        console.log(`Received from ${peer}: Type ${byte}, ${arr}`);
         if (byte === 0) {
             W.send(peer, insertByte(1, Y.encodeStateAsUpdate(this.doc, arr)));
         } else if (byte === 1) {
@@ -46,19 +54,18 @@ export class Adapter {
 
     onNewPeer(peer) {
         const sv = insertByte(0, Y.encodeStateVector(this.doc));
+        console.log(`Peer ${peer} joined; sending ${sv}`);
         W.send(peer, sv);
     }
 
-    async create(d) {
+    static async create(d) {
+        await W.openDB();
         if (!(await W.loadCert())) {
             await W.newCert();
             await W.uploadCert();
             await W.saveCert();
         }
-        W.start();
-        W.setDataHandler(this.onUpdate);
-        W.setPeerHandler(this.onNewPeer);
-
+        
         return new Adapter(d);
     }
 }

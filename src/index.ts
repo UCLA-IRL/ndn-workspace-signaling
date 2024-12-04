@@ -8,7 +8,7 @@ import { keys } from './routes/keys';
 const app = new Hono()
 
 app.use('*', serveStatic({ root: './frontend/dist/' }))
-app.route('*', auth);
+app.route('/', auth);
 app.route('/keys', keys);
 
 const port = 3000
