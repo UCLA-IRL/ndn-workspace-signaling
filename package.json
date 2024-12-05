@@ -19,6 +19,6 @@
     "@types/node": "^20.11.17",
     "@types/node-turn": "^0.0.5",
     "tsx": "^4.7.1",
-    "@esbuild/darwin-x64": "^0.24.0"
+    "esbuild": "^0.24.0"
   }
 }

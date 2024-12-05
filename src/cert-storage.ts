@@ -21,13 +21,15 @@ export async function getAllCerts(): Promise<CertInfo[]> {
 }
 
 export async function getCert(user: string): Promise<CertInfo | null> {
+    let latest: CertInfo | null = null;
     for (let cert of certs) {
-        if (cert.user == user) {
-            return cert; 
+        if (cert.user == user && (latest === null
+                                  || cert.expiration > latest.expiration)) {
+            latest = cert;
         }
     }
 
-    return null;
+    return latest;
 }
 
 export async function getCertByFP(fp: string): Promise<CertInfo | null> {
