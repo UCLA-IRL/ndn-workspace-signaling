@@ -92,6 +92,13 @@ auth.post('/invite',
     }
 )
 
+auth.get('/email', async (c) => {
+    const auth = await getAuth(c);
+    if (!auth) return c.json({ error: "Not authorized" }, 403);
+
+    return c.json({ email: auth.email!.toString() });
+});
+
 auth.get('/logout', async (c) => {
     await revokeSession(c)
     return c.text('You have been successfully logged out!')
