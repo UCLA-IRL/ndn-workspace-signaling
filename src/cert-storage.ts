@@ -13,7 +13,8 @@ const expirationGranularity: number = 300; // s
 const certs: CertInfo[] = [];
 
 export async function addCert(cert: CertInfo): Promise<void> {
-    certs.push(cert);
+    if (await getCertByFP(cert.key) === null)  // Prevent duplicates
+        certs.push(cert);
 }
 
 export async function getAllCerts(): Promise<CertInfo[]> {
