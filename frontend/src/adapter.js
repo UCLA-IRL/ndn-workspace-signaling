@@ -26,7 +26,7 @@ export class Adapter {
     doc
     awareness
 
-    constructor(d) {
+    constructor(d, userid) {
         this.doc = d;
         this.doc.on('update', u => {
             console.log(`Sending: ${u}`);
@@ -41,7 +41,7 @@ export class Adapter {
             W.broadcast(insertByte(2, msg));
         });
 
-        W.start();
+        W.start(userid);
         W.setDataHandler(this.onUpdate.bind(this));
         W.setPeerHandler(this.onNewPeer.bind(this));
     }
@@ -91,7 +91,7 @@ export class Adapter {
             await W.uploadCert();
         }
 
-        return new Adapter(d);
+        return new Adapter(d, userid);
     }
 }
 

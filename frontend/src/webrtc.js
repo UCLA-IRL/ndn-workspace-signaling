@@ -3,6 +3,7 @@ import { io } from 'socket.io-client';
 // ========================== Certificate Management ==========================
 let certDB = null;
 let localCert = null;
+let localUser= null;
 
 // Utilities
 function getCertificateChecksumFromSDP(desc) {
@@ -187,10 +188,12 @@ export function openDB() {
 
 
 
-export function start() {
+export function start(userid) {
     console.assert(localCert !== null, 'No local certificate available');
     console.assert(Object.keys(activeConnection).length === 0, 'Local connection exists');
     console.assert(Object.keys(activeChannel).length === 0, 'Local channel exists');
+
+    localUser = userid;
 
     socket = io(window.location.protocol + '//' + window.location.host);
     socket.on('join-init', onPeerJoinInit);
@@ -282,6 +285,17 @@ function verifyFingerprint(desc, peer) {
             delete activeConnection[peer];
             delete activeChannel[peer];
         }
+        return res.json();
+    }).then(json => {
+        if (json.user !== remoteDesc[peer].user) {
+            console.log(`${peer}: Incorrect user detected! Terminating connection...`);
+            alert(`Terminating unauthorized session ${peer}.`);
+
+            delete localDesc[peer];
+            delete remoteDesc[peer];
+            delete activeConnection[peer];
+            delete activeChannel[peer];
+        }
     });
 }
 
@@ -308,7 +322,7 @@ function onPeerOfferAvailable(msg) {
     activeConnection[peer].setRemoteDescription(remoteDesc[peer].desc).then(() => {
         return activeConnection[peer].createAnswer();
     }).then(answer => {
-        localDesc[peer] = { src: socket.id, dst: remoteDesc[peer].src, desc: answer };
+        localDesc[peer] = { src: socket.id, user: localUser, dst: remoteDesc[peer].src, desc: answer };
         return activeConnection[peer].setLocalDescription(localDesc[peer].desc);
     }).then(() => {
         socket.emit('join-answer', JSON.stringify(localDesc[peer]));
@@ -425,7 +439,7 @@ function sendOffer(peer, send = true) {
     activeChannel[peer] = activeConnection[peer].createDataChannel('chatChannel');
     registerChannelHandlers(activeChannel[peer], peer);
     activeConnection[peer].createOffer().then(offer => {
-        localDesc[peer] = { src: socket.id, desc: offer, dst: peer };
+        localDesc[peer] = { src: socket.id, user: localUser, desc: offer, dst: peer };
         // Send join offer
         if (send) {
             console.log('Sending WebRTC connection offer...');
