@@ -12,7 +12,7 @@ auth.post('/invite',
         const email = value['email'];
 
         if (email == undefined || email === '') {
-            c.json({ error: 'email is required' }, 400);
+            return c.json({ error: 'email is required' }, 400);
         }
 
         return { email };
