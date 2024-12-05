@@ -305,18 +305,18 @@ function onPeerOfferAvailable(msg) {
 
     remoteDesc[peer] = JSON.parse(msg);
     verifyFingerprint(remoteDesc[peer].desc, peer);
-    activeConnection[peer].setRemoteDescription(remoteDesc[peer].desc).then(() =>
-        activeConnection[peer].createAnswer().then(answer => {
-            localDesc[peer] = { src: socket.id, dst: remoteDesc[peer].src, desc: answer };
-            activeConnection[peer].setLocalDescription(localDesc[peer].desc).then(() => {
-                socket.emit('join-answer', JSON.stringify(localDesc[peer]));
-                for (let candidate of deferredCandidates[peer]) {
-                    activeConnection[peer].addIceCandidate(candidate);
-                }
-                deferredCandidates[peer] = []
-            })
-        })
-    );
+    activeConnection[peer].setRemoteDescription(remoteDesc[peer].desc).then(() => {
+        return activeConnection[peer].createAnswer();
+    }).then(answer => {
+        localDesc[peer] = { src: socket.id, dst: remoteDesc[peer].src, desc: answer };
+        return activeConnection[peer].setLocalDescription(localDesc[peer].desc);
+    }).then(() => {
+        socket.emit('join-answer', JSON.stringify(localDesc[peer]));
+        for (let candidate of deferredCandidates[peer]) {
+            activeConnection[peer].addIceCandidate(candidate);
+        }
+        deferredCandidates[peer] = [];
+    });
 }
 
 function onPeerAnswerAvailable(msg) {
@@ -329,13 +329,14 @@ function onPeerAnswerAvailable(msg) {
 
     remoteDesc[peer] = currDesc;
     verifyFingerprint(remoteDesc[peer].desc, peer);
-    activeConnection[peer].setLocalDescription(localDesc[peer].desc).then(() =>
-        activeConnection[peer].setRemoteDescription(remoteDesc[peer].desc).then(() => {
-            for (let candidate of deferredCandidates[peer]) {
-                activeConnection[peer].addIceCandidate(candidate);
-            }
-            deferredCandidates[peer] = []
-        }));
+    activeConnection[peer].setLocalDescription(localDesc[peer].desc).then(() => {
+        return activeConnection[peer].setRemoteDescription(remoteDesc[peer].desc);
+    }).then(() => {
+        for (let candidate of deferredCandidates[peer]) {
+            activeConnection[peer].addIceCandidate(candidate);
+        }
+        deferredCandidates[peer] = []
+    });
 }
 
 function onPeerJoinAvailable(msg) {
