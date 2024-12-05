@@ -39,21 +39,21 @@ function openCertDatabase(onSuccess, onError) {
     req.onerror = () => onError(req.error);
 }
 
-function saveCertificate(db, cert, onSuccess, onError) {
+function saveCertificate(db, key, cert, onSuccess, onError) {
     let certTx = db.transaction('dtlsCerts', 'readwrite');
     let certStore = certTx.objectStore('dtlsCerts');
     let certPut = certStore.put({
-        id: 0,
+        id: key,
         cert: cert,
     });
     certPut.onsuccess = onSuccess;
     certPut.onerror = () => onError(certPut.error);
 }
 
-function loadCertificate(db, onSuccess, onError) {
+function loadCertificate(db, key, onSuccess, onError) {
     let certTx = db.transaction('dtlsCerts', 'readonly');
     let certStore = certTx.objectStore('dtlsCerts');
-    let certGet = certStore.get(0)
+    let certGet = certStore.get(key)
     certGet.onsuccess = () => {
         let match = certGet.result;
         if (match !== undefined) {
@@ -67,11 +67,11 @@ function loadCertificate(db, onSuccess, onError) {
 
 // ========================== Interface ==========================
 
-export function loadCert() {
+export function loadCert(key) {
     console.assert(certDB !== null, 'IndexedDB not available');
 
     return new Promise((res, rej) => {
-        loadCertificate(certDB,
+        loadCertificate(certDB, key,
             cert => {
                 if (cert !== null) {
                     getCertificateChecksum(cert).then(fp => {
@@ -98,12 +98,12 @@ export function loadCert() {
     });
 }
 
-export function saveCert() {
+export function saveCert(key) {
     console.assert(localCert !== null, 'No local certificate available');
     console.assert(certDB !== null, 'IndexedDB not available');
 
     return new Promise((res, rej) => {
-        saveCertificate(certDB, localCert,
+        saveCertificate(certDB, key, localCert,
             () => {
                 res(true)
             },

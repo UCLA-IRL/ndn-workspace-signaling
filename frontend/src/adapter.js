@@ -65,10 +65,31 @@ export class Adapter {
     }
 
     static async create(d) {
+        // Fetch current identity
+        let userid = await fetch(`/email`, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+            },
+        }).then(res => {
+            return res.json();
+        }).then(json => {
+            return json.email;
+        });
+        console.log(userid);
         await W.openDB();
-        await W.newCert();
-        await W.uploadCert();
-        await W.saveCert();
+        let status = await W.loadCert(userid);
+        if (!status) {
+            console.log('Issuing new certificate');
+            await W.newCert(userid);
+            await W.uploadCert();
+            await W.saveCert(userid);
+        } else {
+            console.log('Reusing old certificate');
+            // Always re-upload the cert, since the certDB is not persistent
+            await W.uploadCert();
+        }
 
         return new Adapter(d);
     }
